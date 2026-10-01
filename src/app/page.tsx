@@ -367,6 +367,7 @@ export default function Dashboard() {
     gdelt_events: false,
     cf_outages: false,
     cf_attacks: false,
+    dk_traffic: false,
   });
   // Server-side capability flags — gate layers that need credentials.
   const selectFlatMap = () => {
@@ -437,6 +438,11 @@ export default function Dashboard() {
     fetch('/api/cloudflare-radar?probe=1')
       .then(r => (r.ok ? r.json() : null))
       .then(p => { if (p) setCapabilities(c => ({ ...c, cloudflare: !!p.configured })); })
+      .catch(() => { /* leave the layer hidden */ });
+
+    fetch('/api/dk-traffic?probe=1')
+      .then(r => (r.ok ? r.json() : null))
+      .then(p => { if (p) setCapabilities(c => ({ ...c, dk_traffic: !!p.configured })); })
       .catch(() => { /* leave the layer hidden */ });
 
     // Once the user interacts, a late IP-location response must not steal the
@@ -843,6 +849,11 @@ export default function Dashboard() {
       loadLayerOnce('gdelt_events', '/api/gdelt-events?limit=600', d => ({ gdelt_events: d.events }));
     }
 
+    // Denmark road traffic — Vejdirektoratet DATEX II snapshot
+    if ((activeLayers as any).dk_traffic) {
+      loadLayerOnce('dk_traffic', '/api/dk-traffic', d => ({ dk_traffic_events: d.events ?? [] }));
+    }
+
     // Cloudflare Radar — one request backs both layers
     if ((activeLayers as any).cf_outages || (activeLayers as any).cf_attacks) {
       loadLayerOnce('cloudflare_radar', '/api/cloudflare-radar', d => ({
@@ -894,6 +905,14 @@ export default function Dashboard() {
         fetchEndpoint('/api/cyber-attacks', d => ({ cyber_attacks: d.indicators }));
         layerFetchedRef.current.add('cyber_attacks');
       }, 300000)); // 5m — a blocklist turns over in hours, not seconds
+    }
+
+    if ((activeLayers as any).dk_traffic) {
+      intervals.push(setInterval(() => {
+        layerFetchedRef.current.delete('dk_traffic');
+        fetchEndpoint('/api/dk-traffic', d => ({ dk_traffic_events: d.events ?? [] }));
+        layerFetchedRef.current.add('dk_traffic');
+      }, 600000)); // official snapshot updates every 10 minutes
     }
     return () => { intervals.forEach(clearInterval); stopFns.forEach(stop => stop()); };
   }, [activeLayers, fetchEndpoint]);
