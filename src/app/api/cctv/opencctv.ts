@@ -211,13 +211,33 @@ function loader(region: string, bounds: Bounds, cap: number, countryFilter?: str
       }
     }
 
-    const wanted = sample(inRegion, cap);
+    /*
+     * Country-specific loaders must inspect every candidate in the country
+     * bounds before filtering by country. Sampling first was the reason DK/DE
+     * looked almost empty: most sampled rows belonged to neighbouring
+     * countries and were discarded afterwards.
+     *
+     * Regional Asia loaders still use sampling to keep those very large
+     * regions bounded.
+     */
+    const wanted = countryFilter ? inRegion : sample(inRegion, cap);
     const chunks: string[][] = [];
     for (let i = 0; i < wanted.length; i += BATCH_SIZE) {
       chunks.push(wanted.slice(i, i + BATCH_SIZE));
     }
 
-    const results = await Promise.allSettled(chunks.map(fetchBatch));
+    /*
+     * Do not fire hundreds of upstream requests at once. Process small waves:
+     * fast enough for Vercel, but polite to OpenCCTV and far less likely to
+     * trigger throttling.
+     */
+    const results: PromiseSettledResult<OpenCctvRecord[]>[] = [];
+    const WAVE = 10;
+    for (let i = 0; i < chunks.length; i += WAVE) {
+      const wave = await Promise.allSettled(chunks.slice(i, i + WAVE).map(fetchBatch));
+      results.push(...wave);
+    }
+
     const seen = new Map<string, CctvCamera>();
     for (const r of results) {
       if (r.status !== 'fulfilled') continue;
@@ -234,7 +254,7 @@ function loader(region: string, bounds: Bounds, cap: number, countryFilter?: str
     }
 
     const cams = [...seen.values()];
-    console.log(`[OSIRIS] ${region} cameras — OpenCCTV: ${cams.length} of ${inRegion.length} in region`);
+    console.log(`[OSIRIS] ${region} cameras — OpenCCTV: ${cams.length} usable of ${inRegion.length} candidates`);
     return cams;
   };
 }
