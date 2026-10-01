@@ -23,12 +23,9 @@ const GERMANY_FALLBACK: CctvCamera[] = [
 export async function fetchGermanyCameras(): Promise<CctvCamera[]> {
   try {
     const live = await fetchGermanyOpenCctv();
-    if (live.length) {
-      const seen = new Set(live.map(c => c.id));
-      return [...live, ...GERMANY_FALLBACK.filter(c => !seen.has(c.id))];
-    }
+    return [...live, ...GERMANY_FALLBACK];
   } catch (e) {
-    console.warn('[OSIRIS] OpenCCTV Germany failed, using fallback:', e instanceof Error ? e.message : e);
+    console.warn('[OSIRIS] Germany directory feed failed:', e instanceof Error ? e.message : e);
+    return GERMANY_FALLBACK;
   }
-  return GERMANY_FALLBACK;
 }
