@@ -45,7 +45,7 @@ const REGIONS: Record<string, { bounds: Bounds; cap: number }> = {
      regions. The bounds are deliberately tight so we do not drag unrelated
      neighbouring-country cameras into those country loaders. */
   denmark: { bounds: { minLat: 54.4, maxLat: 58.0, minLng: 7.5, maxLng: 15.5 }, cap: 400 },
-  germany: { bounds: { minLat: 47.2, maxLat: 55.2, minLng: 5.5, maxLng: 15.6 }, cap: 900 },
+  germany: { bounds: { minLat: 47.2, maxLat: 55.2, minLng: 5.5, maxLng: 15.6 }, cap: 1600 },
   /* China, Japan, the Koreas and Taiwan — ~24,000 candidates. */
   eastasia: { bounds: { minLat: 18, maxLat: 46, minLng: 73.5, maxLng: 146 }, cap: 1200 },
   /* Indochina, Indonesia, the Philippines — ~7,700 candidates. */
@@ -194,7 +194,7 @@ const markerIndex = cachedSource('opencctv-index', async (): Promise<MarkerIndex
   return [index];
 });
 
-function loader(region: string, bounds: Bounds, cap: number, countryFilter?: string) {
+function loader(region: string, bounds: Bounds, cap: number, countryFilter?: string | string[]) {
   return async (): Promise<CctvCamera[]> => {
     const [index] = await markerIndex();
     const ids = index?.ids ?? [];
@@ -224,7 +224,9 @@ function loader(region: string, bounds: Bounds, cap: number, countryFilter?: str
       for (const rec of r.value) {
         if (countryFilter) {
           const country = (rec.country || '').trim().toLowerCase();
-          if (country !== countryFilter.toLowerCase()) continue;
+          const allowed = (Array.isArray(countryFilter) ? countryFilter : [countryFilter])
+            .map(v => v.toLowerCase());
+          if (!allowed.includes(country)) continue;
         }
         const cam = mapRecord(rec);
         if (cam) seen.set(cam.id, cam);
@@ -245,9 +247,9 @@ export const fetchWestAsiaCameras = cachedSource('westasia', loader('West & Cent
 /** European country loaders used by the dedicated Denmark/Germany modules. */
 export const fetchDenmarkOpenCctv = cachedSource(
   'opencctv-denmark',
-  loader('Denmark', REGIONS.denmark.bounds, REGIONS.denmark.cap, 'Denmark'),
+  loader('Denmark', REGIONS.denmark.bounds, REGIONS.denmark.cap, ['Denmark', 'DK']),
 );
 export const fetchGermanyOpenCctv = cachedSource(
   'opencctv-germany',
-  loader('Germany', REGIONS.germany.bounds, REGIONS.germany.cap, 'Germany'),
+  loader('Germany', REGIONS.germany.bounds, REGIONS.germany.cap, ['Germany', 'DE']),
 );
