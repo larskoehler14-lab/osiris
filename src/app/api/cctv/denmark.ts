@@ -1,6 +1,7 @@
+import { fetchDenmarkOpenCctv } from './opencctv';
 import type { CctvCamera } from './types';
 
-const DENMARK_CAMERAS: CctvCamera[] = [
+const DENMARK_VERIFIED: CctvCamera[] = [
   {
     id: 'dk-hirtshals-port-north',
     lat: 57.59225,
@@ -26,5 +27,11 @@ const DENMARK_CAMERAS: CctvCamera[] = [
 ];
 
 export async function fetchDenmarkCameras(): Promise<CctvCamera[]> {
-  return DENMARK_CAMERAS;
+  try {
+    const live = await fetchDenmarkOpenCctv();
+    return [...live, ...DENMARK_VERIFIED];
+  } catch (e) {
+    console.warn('[OSIRIS] Denmark directory feed failed:', e instanceof Error ? e.message : e);
+    return DENMARK_VERIFIED;
+  }
 }
