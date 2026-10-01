@@ -194,7 +194,7 @@ const markerIndex = cachedSource('opencctv-index', async (): Promise<MarkerIndex
   return [index];
 });
 
-function loader(region: string, bounds: Bounds, cap: number) {
+function loader(region: string, bounds: Bounds, cap: number, countryFilter?: string) {
   return async (): Promise<CctvCamera[]> => {
     const [index] = await markerIndex();
     const ids = index?.ids ?? [];
@@ -222,6 +222,10 @@ function loader(region: string, bounds: Bounds, cap: number) {
     for (const r of results) {
       if (r.status !== 'fulfilled') continue;
       for (const rec of r.value) {
+        if (countryFilter) {
+          const country = (rec.country || '').trim().toLowerCase();
+          if (country !== countryFilter.toLowerCase()) continue;
+        }
         const cam = mapRecord(rec);
         if (cam) seen.set(cam.id, cam);
       }
@@ -241,9 +245,9 @@ export const fetchWestAsiaCameras = cachedSource('westasia', loader('West & Cent
 /** European country loaders used by the dedicated Denmark/Germany modules. */
 export const fetchDenmarkOpenCctv = cachedSource(
   'opencctv-denmark',
-  loader('Denmark', REGIONS.denmark.bounds, REGIONS.denmark.cap),
+  loader('Denmark', REGIONS.denmark.bounds, REGIONS.denmark.cap, 'Denmark'),
 );
 export const fetchGermanyOpenCctv = cachedSource(
   'opencctv-germany',
-  loader('Germany', REGIONS.germany.bounds, REGIONS.germany.cap),
+  loader('Germany', REGIONS.germany.bounds, REGIONS.germany.cap, 'Germany'),
 );
