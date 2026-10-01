@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plane, Satellite, Sun, AlertTriangle, Camera,
   CloudLightning, Ship, Network, Database, Ghost,
-  Flame, Tv, Radio, Mountain, Anchor, Megaphone, SlidersHorizontal
+  Flame, Tv, Radio, Mountain, Anchor, Megaphone, SlidersHorizontal, Route
 } from 'lucide-react';
 import StyleStudio from './StyleStudio';
 import { TERRAIN_MIN_ZOOM, type TerrainStatus } from '@/lib/map-terrain';
@@ -98,6 +98,14 @@ const LAYER_GROUPS: LayerGroupDef[] = [
       { key: 'cctv', label: 'CCTV Cameras', dataKey: 'cameras' },
       { key: 'cctv_previews', label: 'Live Previews', dataKey: '', parent: 'cctv' },
       { key: 'live_news', label: 'Live News Feeds', dataKey: 'live_feeds' },
+    ],
+  },
+  {
+    label: 'TRAFFIC',
+    fullLabel: 'ROAD TRAFFIC',
+    icon: Route,
+    layers: [
+      { key: 'dk_traffic', label: 'Denmark Traffic', dataKey: 'dk_traffic_events', requires: 'dk_traffic' },
     ],
   },
   {
