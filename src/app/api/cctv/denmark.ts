@@ -29,7 +29,14 @@ const DENMARK_VERIFIED: CctvCamera[] = [
 export async function fetchDenmarkCameras(): Promise<CctvCamera[]> {
   try {
     const live = await fetchDenmarkOpenCctv();
-    return [...live, ...DENMARK_VERIFIED];
+    const seen = new Set<string>();
+    const all = [...live, ...DENMARK_VERIFIED];
+    return all.filter(cam => {
+      const key = cam.id || `${cam.lat}:${cam.lng}:${cam.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   } catch (e) {
     console.warn('[OSIRIS] Denmark directory feed failed:', e instanceof Error ? e.message : e);
     return DENMARK_VERIFIED;
