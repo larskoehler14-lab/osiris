@@ -1,4 +1,5 @@
 import { fetchGermanyOpenCctv } from './opencctv';
+import { fetchHessenCameras } from './hessen';
 import type { CctvCamera } from './types';
 
 const GERMANY_FALLBACK: CctvCamera[] = [
@@ -21,11 +22,20 @@ const GERMANY_FALLBACK: CctvCamera[] = [
 ];
 
 export async function fetchGermanyCameras(): Promise<CctvCamera[]> {
-  try {
-    const live = await fetchGermanyOpenCctv();
-    return [...live, ...GERMANY_FALLBACK];
-  } catch (e) {
-    console.warn('[OSIRIS] Germany directory feed failed:', e instanceof Error ? e.message : e);
-    return GERMANY_FALLBACK;
-  }
+  const [openCctv, hessen] = await Promise.all([
+    fetchGermanyOpenCctv().catch(e => {
+      console.warn('[OSIRIS] Germany directory feed failed:', e instanceof Error ? e.message : e);
+      return [] as CctvCamera[];
+    }),
+    fetchHessenCameras(),
+  ]);
+
+  const all = [...openCctv, ...hessen, ...GERMANY_FALLBACK];
+  const seen = new Set<string>();
+  return all.filter(cam => {
+    const key = cam.id || `${cam.lat}:${cam.lng}:${cam.name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
