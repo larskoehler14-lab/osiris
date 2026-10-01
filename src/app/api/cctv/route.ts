@@ -18,6 +18,7 @@ import { fetchItalyCameras } from './italy';
 import { fetchCzechiaCameras } from './czechia';
 import { fetchSlovakiaCameras } from './slovakia';
 import { fetchGermanyCameras } from './germany';
+import { fetchDenmarkCameras } from './denmark';
 import { fetchFranceCameras } from './france';
 import { fetchSpainCameras } from './spain';
 import { fetchPolandCameras } from './poland';
@@ -399,6 +400,19 @@ async function fetchEuropeCameras(): Promise<any[]> {
 
   cams.push(...await fetchAsfinagCameras());
 
+  // Germany and Denmark are also loaded into the general Europe feed so
+  // they are visible when the map requests Europe rather than a country.
+  try {
+    cams.push(...await fetchGermanyCameras());
+  } catch (e) {
+    console.warn('[OSIRIS] Germany cameras failed — absent from this refresh:', e instanceof Error ? e.message : e);
+  }
+  try {
+    cams.push(...await fetchDenmarkCameras());
+  } catch (e) {
+    console.warn('[OSIRIS] Denmark cameras failed — absent from this refresh:', e instanceof Error ? e.message : e);
+  }
+
   return cams.filter((c: any) => c.lat && c.lng);
 }
 
@@ -500,6 +514,7 @@ const RAW_REGION_FETCHERS: Record<string, RegionFetcher> = {
   'czechia': fetchCzechiaCameras,
   'slovakia': fetchSlovakiaCameras,
   'germany': fetchGermanyCameras,
+  'denmark': fetchDenmarkCameras,
   'france': fetchFranceCameras,
   'spain': fetchSpainCameras,
   'poland': fetchPolandCameras,
