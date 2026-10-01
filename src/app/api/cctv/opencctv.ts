@@ -41,6 +41,11 @@ const BATCH_SIZE = 50;
 interface Bounds { minLat: number; maxLat: number; minLng: number; maxLng: number }
 
 const REGIONS: Record<string, { bounds: Bounds; cap: number }> = {
+  /* Denmark and Germany use the same live OpenCCTV index as the Asian
+     regions. The bounds are deliberately tight so we do not drag unrelated
+     neighbouring-country cameras into those country loaders. */
+  denmark: { bounds: { minLat: 54.4, maxLat: 58.0, minLng: 7.5, maxLng: 15.5 }, cap: 400 },
+  germany: { bounds: { minLat: 47.2, maxLat: 55.2, minLng: 5.5, maxLng: 15.6 }, cap: 900 },
   /* China, Japan, the Koreas and Taiwan — ~24,000 candidates. */
   eastasia: { bounds: { minLat: 18, maxLat: 46, minLng: 73.5, maxLng: 146 }, cap: 1200 },
   /* Indochina, Indonesia, the Philippines — ~7,700 candidates. */
@@ -231,3 +236,14 @@ function loader(region: string, bounds: Bounds, cap: number) {
 export const fetchEastAsiaCameras = cachedSource('eastasia', loader('East Asia', REGIONS.eastasia.bounds, REGIONS.eastasia.cap));
 export const fetchSeAsiaCameras = cachedSource('seasia', loader('Southeast Asia', REGIONS.seasia.bounds, REGIONS.seasia.cap));
 export const fetchWestAsiaCameras = cachedSource('westasia', loader('West & Central Asia', REGIONS.westasia.bounds, REGIONS.westasia.cap));
+
+
+/** European country loaders used by the dedicated Denmark/Germany modules. */
+export const fetchDenmarkOpenCctv = cachedSource(
+  'opencctv-denmark',
+  loader('Denmark', REGIONS.denmark.bounds, REGIONS.denmark.cap),
+);
+export const fetchGermanyOpenCctv = cachedSource(
+  'opencctv-germany',
+  loader('Germany', REGIONS.germany.bounds, REGIONS.germany.cap),
+);
