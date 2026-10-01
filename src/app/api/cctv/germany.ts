@@ -1,6 +1,7 @@
+import { fetchGermanyOpenCctv } from './opencctv';
 import type { CctvCamera } from './types';
 
-const GERMANY_CAMERAS: CctvCamera[] = [
+const GERMANY_FALLBACK: CctvCamera[] = [
   {
     id: 'de-berlin-1',
     lat: 52.5200, lng: 13.4050,
@@ -9,7 +10,6 @@ const GERMANY_CAMERAS: CctvCamera[] = [
     stream_type: 'iframe',
     source: 'YouTube Live',
   },
-
   {
     id: 'de-munich-1',
     lat: 48.1351, lng: 11.5820,
@@ -21,5 +21,14 @@ const GERMANY_CAMERAS: CctvCamera[] = [
 ];
 
 export async function fetchGermanyCameras(): Promise<CctvCamera[]> {
-  return GERMANY_CAMERAS;
+  try {
+    const live = await fetchGermanyOpenCctv();
+    if (live.length) {
+      const seen = new Set(live.map(c => c.id));
+      return [...live, ...GERMANY_FALLBACK.filter(c => !seen.has(c.id))];
+    }
+  } catch (e) {
+    console.warn('[OSIRIS] OpenCCTV Germany failed, using fallback:', e instanceof Error ? e.message : e);
+  }
+  return GERMANY_FALLBACK;
 }
